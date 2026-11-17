@@ -3,7 +3,7 @@
  * and listen. All routing behavior lives in `app.ts`; this file only resolves
  * environment configuration and owns the process lifecycle.
  */
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 
 import { buildApp } from "./app.js";
 import { createJsonFileRepository } from "./repository.js";
@@ -26,8 +26,12 @@ function readPort(raw: string | undefined): number {
 async function main(): Promise<void> {
   const port = readPort(process.env.PORT);
   const host = process.env.HOST?.trim() || DEFAULT_HOST;
-  const dataDir = process.env.ONTO_DATA_DIR?.trim() || DEFAULT_DATA_DIR;
-  const webDistDir = process.env.ONTO_WEB_DIST?.trim() || null;
+  // Resolve relative paths against the process cwd so `@fastify/static` and the
+  // JSON repository receive absolute paths regardless of where the server runs.
+  const dataDir = resolve(process.env.ONTO_DATA_DIR?.trim() || DEFAULT_DATA_DIR);
+  const webDistDirRaw = process.env.ONTO_WEB_DIST?.trim() || null;
+  const webDistDir =
+    webDistDirRaw === null ? null : isAbsolute(webDistDirRaw) ? webDistDirRaw : resolve(webDistDirRaw);
 
   const app = await buildApp({
     repository: createJsonFileRepository(dataDir),
