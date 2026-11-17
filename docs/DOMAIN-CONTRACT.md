@@ -18,7 +18,7 @@ inputs, and both are injectable or tolerated by tests.
 
 | Factory | Defaults |
 | --- | --- |
-| `createOntology` | `id` random UUID, `version` `"0.1.0"`, `baseIri` `https://example.org/ontology/<slug(name)>`, `createdAt = updatedAt = now` (ISO string, injectable), empty arrays, description `""` |
+| `createOntology` | `id` random UUID, `version` `"0.1.0"`, `baseIri` `https://example.org/ontology/<slug(name)>` (when `slugify(name)` is empty the fallback segment is `ontology`), `createdAt = updatedAt = now` (ISO string, injectable), empty arrays, description `""` |
 | `createClass` | `id` random UUID, `name = suggestClassName(label)`, `label` trimmed, description `""`, `parentId: null`, `color` first PALETTE colour when omitted, `attributes: []`, `position` `{x:0,y:0}` |
 | `createAttribute` | `id` random UUID, `label` defaults to title-cased `name`, `datatype` `"string"`, `required: false`, `cardinality: "one"`, description `""`, `enumValues: []` |
 | `createRelation` | `id` random UUID, `name = suggestRelationName(label)`, `cardinality` `"many-to-many"`, description `""` |

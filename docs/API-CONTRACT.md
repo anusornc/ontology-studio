@@ -31,7 +31,6 @@ Non-2xx responses are `{ "error": { "code": string, "message": string, "details"
 | 400 | `invalid_request` (body/query schema failure) |
 | 400 | `invalid_document` (ontology shape is unparseable; `details.problems` is `string[]`) |
 | 404 | `not_found` |
-| 409 | `conflict` (e.g. importing a document whose id already exists and cannot be assigned a fresh id) |
 | 500 | `internal` |
 
 ## Endpoints
@@ -62,11 +61,14 @@ ontology does not exist. Creates are not allowed via PUT.
 ### `POST /api/ontologies/:id/validate`
 `200` -> `ValidationReport` from `validateOntology`. `404` if missing.
 
-### `GET /api/ontologies/:id/export?format=turtle|jsonld`
+### `GET /api/ontologies/:id/export?format=turtle|jsonld|json`
 - `turtle`: `200`, `Content-Type: text/turtle; charset=utf-8`,
   `Content-Disposition: attachment; filename="<slug>.ttl"`.
 - `jsonld`: `200`, `Content-Type: application/ld+json; charset=utf-8`,
   `Content-Disposition: attachment; filename="<slug>.jsonld"`.
+- `json`: `200`, `Content-Type: application/json; charset=utf-8`,
+  `Content-Disposition: attachment; filename="<slug>.json"`, body is exactly
+  `serializeOntology(ontology)` (the round-trippable native document).
 - Any other format -> `400 invalid_request`. Missing ontology -> `404`.
 
 ### `POST /api/ontologies/import`
