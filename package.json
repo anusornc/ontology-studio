@@ -1,0 +1,30 @@
+{
+  "name": "ontology-designer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.1.0",
+  "description": "A visual, TDD-built ontology designer: model classes, properties and relationships, validate, persist and export OWL/JSON-LD/Turtle.",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,green \"pnpm --filter @onto/server dev\" \"pnpm --filter @onto/web dev\"",
+    "dev:api": "pnpm --filter @onto/server dev",
+    "dev:web": "pnpm --filter @onto/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --filter @onto/server start",
+    "test": "pnpm -r test",
+    "test:watch": "pnpm -r --parallel test:watch",
+    "typecheck": "pnpm -r typecheck",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install chromium",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@types/node": "24.10.1",
+    "concurrently": "10.0.7",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
