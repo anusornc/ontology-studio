@@ -13,3 +13,4 @@ export * from "./validation";
 export * from "./serialization";
 export * from "./exporters";
 export * from "./sample";
+export * from "./templates";

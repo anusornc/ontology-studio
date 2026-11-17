@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useOntologyStore } from "../state/context";
+import { TemplatePicker } from "./TemplatePicker";
 
 /**
  * Cold-start state: the only thing on screen when no ontology exists yet.
  * Creating calls the API and opens the new document; the sample is created via
- * `createSampleOntology()` and then saved.
+ * `createSampleOntology()` and then saved. A compact template picker also lets a
+ * first-time user load a ready-made ontology without typing a name.
  */
 export function EmptyState() {
   const createNewOntology = useOntologyStore((state) => state.createNewOntology);
@@ -101,6 +103,12 @@ export function EmptyState() {
           The sample is a ready-to-explore <strong>University</strong> ontology with classes,
           attributes and relations.
         </p>
+        <div className="empty-card__divider" aria-hidden="true">
+          <span>or start from a template</span>
+        </div>
+        <div className="empty-card__templates">
+          <TemplatePicker />
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OntologyApi } from "../src/api/client";
 import { createOntologyStore } from "../src/state/store";
 
+// The store builds templates from @onto/core's createOntologyFromTemplate. Keep
+// the real helpers but stub that one so tests never depend on the template
+// registry being present in core. The dynamic import() in the store returns
+// this same mocked module.
+vi.mock("@onto/core", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@onto/core")>();
+  return {
+    ...actual,
+    createOntologyFromTemplate: vi.fn(),
+    createOntologyTemplates: vi.fn(() => [])
+  };
+});
+
 function makeOntology(overrides: Partial<Ontology> = {}): Ontology {
   const timestamp = "2026-01-01T00:00:00.000Z";
   return {
@@ -394,5 +407,72 @@ describe("createOntologyStore", () => {
     await expect(store.getState().save()).resolves.toBe(true);
 
     expect(api.saveOntology).not.toHaveBeenCalled();
+  });
+
+  it("exposes the template registry on the store state", async () => {
+    const templates = [
+      { id: "pizza", name: "Pizza", description: "Protege classic", category: "Learning", tags: ["food"] },
+      { id: "supply-chain", name: "Supply chain", description: "Traceability", category: "Industry", tags: ["logistics"] }
+    ];
+    const core = await import("@onto/core");
+    vi.mocked(core.createOntologyTemplates).mockReturnValue(templates as never);
+
+    const store = createOntologyStore(createFakeApi());
+
+    expect(store.getState().templates).toEqual(templates);
+  });
+
+  it("creates and opens an ontology from a template, saving it and updating summaries", async () => {
+    const templateDoc = makeOntology({
+      id: "template-id",
+      name: "Pizza",
+      description: "Built from template",
+      version: "0.1.0",
+      baseIri: "https://example.org/ontology/pizza",
+      classes: [makeOntology().classes[0]!]
+    });
+    const core = await import("@onto/core");
+    vi.mocked(core.createOntologyFromTemplate).mockReturnValue(templateDoc);
+    const api = createFakeApi();
+    const store = createOntologyStore(api);
+
+    await expect(store.getState().createFromTemplate("pizza")).resolves.toBe(true);
+
+    expect(core.createOntologyFromTemplate).toHaveBeenCalledWith("pizza");
+    expect(api.createOntology).toHaveBeenCalledWith({
+      name: "Pizza",
+      description: "Built from template",
+      baseIri: "https://example.org/ontology/pizza",
+      version: "0.1.0"
+    });
+    expect(api.saveOntology).toHaveBeenCalledTimes(1);
+    const saved = vi.mocked(api.saveOntology).mock.calls[0]![0];
+    expect(saved.id).toBe("created-id");
+    expect(saved.createdAt).toBe(templateDoc.createdAt);
+    expect(saved.updatedAt).toBe(templateDoc.updatedAt);
+    expect(store.getState().ontology?.id).toBe("created-id");
+    expect(store.getState().ontology?.name).toBe("Pizza");
+    expect(store.getState().ontology?.classes).toHaveLength(1);
+    expect(store.getState().summaries[0]).toMatchObject({
+      id: "created-id",
+      name: "Pizza",
+      classCount: 1
+    });
+    expect(store.getState().saveState).toBe("idle");
+  });
+
+  it("sets an error and returns false when creating from a template fails", async () => {
+    const core = await import("@onto/core");
+    vi.mocked(core.createOntologyFromTemplate).mockImplementation(() => {
+      throw new Error("no such template");
+    });
+    const api = createFakeApi();
+    const store = createOntologyStore(api);
+
+    await expect(store.getState().createFromTemplate("nope")).resolves.toBe(false);
+
+    expect(api.createOntology).not.toHaveBeenCalled();
+    expect(store.getState().ontology).toBeNull();
+    expect(store.getState().error).toContain("no such template");
   });
 });

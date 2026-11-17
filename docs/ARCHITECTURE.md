@@ -60,7 +60,7 @@ flowchart LR
     disk[("JSON files<br/>data/ontologies/{id}.json")]
 
     client -->|"HTTP JSON under /api"| app
-    store -->|"types and sample data"| core
+    store -->|"types, sample data and templates"| core
     toflow -->|"types"| core
     app -->|"create, parse, mutate, validate, export"| core
     jsonfile -->|"atomic write: temp file then rename"| disk

@@ -148,6 +148,54 @@ test.describe("Ontology Designer", () => {
     await expect(page.getByTestId("status-errors")).toContainText("0");
   });
 
+  test("creates an ontology from a template (Pizza) via the new dialog", async ({ page }) => {
+    await gotoApp(page);
+    await createOntologyFromEmptyState(page, uniqueName("Seed"));
+    await waitForSaved(page);
+
+    await page.getByTestId("btn-new-ontology").click();
+    await expect(page.getByTestId("new-ontology-dialog")).toBeVisible();
+    await page.getByTestId("template-tab-templates").click();
+
+    const grid = page.getByTestId("template-grid");
+    await expect(grid).toBeVisible();
+    await expect(page.getByTestId("template-card-pizza")).toContainText("Pizza");
+
+    await page.getByTestId("btn-use-template-pizza").click();
+    await expect(page.getByTestId("new-ontology-dialog")).toBeHidden();
+
+    await page.getByTestId("canvas").waitFor();
+    // The pizza template has 7 classes; assert the count and that the class tree
+    // shows the canonical tutorial class labels (class ids are seeded uuids).
+    await expect(page.locator('[data-testid^="node-"]')).toHaveCount(7);
+    await expect(page.getByTestId("status-classes")).toContainText("7");
+    const treeText = await page.getByTestId("class-tree").textContent();
+    expect(treeText).toContain("Pizza");
+    expect(treeText).toContain("Pizza Topping");
+    expect(treeText).toContain("Vegetarian Pizza");
+    await waitForSaved(page);
+  });
+
+  test("loads a template from the empty-state picker", async ({ page }) => {
+    await gotoApp(page);
+    await expect(page.getByTestId("empty-state")).toBeVisible();
+
+    await expect(page.getByTestId("template-grid")).toBeVisible();
+    await page.getByTestId("template-search").fill("supply");
+    await expect(page.getByTestId("template-card-supply-chain")).toBeVisible();
+    await expect(page.getByTestId("template-card-pizza")).toHaveCount(0);
+
+    await page.getByTestId("btn-use-template-supply-chain").click();
+    await expect(page.getByTestId("empty-state")).toHaveCount(0);
+    await page.getByTestId("canvas").waitFor();
+    await expect(page.getByTestId("status-classes")).toContainText("6");
+    await expect(page.locator('[data-testid^="node-"]')).toHaveCount(6);
+    const treeText = await page.getByTestId("class-tree").textContent();
+    expect(treeText).toContain("Handling Event");
+    expect(treeText).toContain("Sensor Reading");
+    await waitForSaved(page);
+  });
+
   test("switches between ontologies using the picker and the new dialog", async ({ page }) => {
     await gotoApp(page);
     const firstName = uniqueName("Ontology A");

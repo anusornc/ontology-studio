@@ -158,3 +158,100 @@ show something useful.
 positioned classes, a small inheritance tree, attributes with varied datatypes and
 a handful of relations, and it must pass validation with **zero errors**. It is
 the payload behind the UI's "Load sample" action.
+
+## Ontology templates
+
+A **template** is a ready-made starting ontology a user can pick instead of a
+blank canvas. All template-building lives in `@onto/core` (pure), so any client
+can use it and it is fully unit-testable.
+
+### `OntologyTemplate`
+
+```ts
+interface OntologyTemplate {
+  /** Stable machine id, e.g. "pizza" or "supply-chain". */
+  id: string;
+  /** Human label, e.g. "Pizza". */
+  name: string;
+  /** One-line description shown on the picker card. */
+  description: string;
+  /** Short category tag: "Domain" | "Learning" | "Industry". */
+  category: "Domain" | "Learning" | "Industry";
+  /** Keyword blurb used by a search box. */
+  tags: string[];
+  /** Build a brand-new ontology instance (fresh unique ids) with a laid-out graph. */
+  build: (options?: TemplateBuildOptions) => Ontology;
+}
+```
+
+`TemplateBuildOptions`:
+- `now?: string` — injectable ISO timestamp for determinism in tests.
+- `nameOverride?: string` — optional override for the ontology `name`; defaults
+  to the template's own name.
+- `baseIriOverride?: string`.
+
+### Registry + helpers
+
+- `createOntologyTemplates(): OntologyTemplate[]` — all templates, in a fixed
+  stable order.
+- `findOntologyTemplate(id: string): OntologyTemplate | undefined`.
+- `createOntologyFromTemplate(id: string, options?): Ontology` — shorthand for
+  `findOntologyTemplate(id)?.build(options)`; throws `RangeError` with a helpful
+  message when the id is unknown.
+
+### Required templates
+
+1. **`pizza`** — category `Learning`. The durable Protege tutorial classic:
+   - Root `Pizza`, subclasses `VegetarianPizza`, `MeatPizza`, `CheesePizza`
+     (all `subClassOf` Pizza, distinct coloured palettes).
+   - `PizzaBase` with attribute `thickness` (enum `thin|thick|deep-dish`).
+   - `PizzaTopping` (datatype `vegetarian: boolean`), `Topping` subclass of
+     `PizzaTopping` (e.g. Pepperoni, Mushroom), and a `CheeseType` enum-attribute.
+   - Relations: `Pizza —hasBase—> PizzaBase` (exactly one), `Pizza —hasTopping—>
+     PizzaTopping` (many), `VegetarianPizza —excludesTopping—> Topping` (many,
+     meaning the meat toppings this vegetarian pizza forbids).
+   - At least 6 classes, varied datatypes and cardinalities, `hasBase` and
+     `hasTopping` for the root. Names match the canonical tutorial (Pizza,
+     PizzaTopping, PizzaBase, Topping, VegetarianPizza, MeatPizza).
+   - Must validate with zero errors. Must auto-layout cleanly.
+
+2. **`supply-chain`** — category `Industry`. Traceability:
+   - Classes `Product`, `Batch` (`subClassOf` Product), `Party`, `Location`,
+     `HandlingEvent`, `SensorReading`.
+   - Attributes: Batch `batchId` (string, required), `producedAt` (dateTime),
+     Location `longitude`/`latitude` (decimal), HandlingEvent `occurredAt`
+     (dateTime, required) + `eventType` (enum `produce|store|transport|receive|retail`),
+     SensorReading `temperatureC` (decimal) + `recordedAt` (dateTime).
+   - Relations: `Batch —undergoes—> HandlingEvent` (one-to-many),
+     `HandlingEvent —performedBy—> Party` (many-to-one),
+     `HandlingEvent —atLocation—> Location` (many-to-one),
+     `Batch —trackedBy—> SensorReading` (one-to-many).
+   - Zero validation errors; clean layout.
+
+3. **`education`** — category `Domain`. A compact school domain distinct from
+   the University sample: `Student`, `Teacher`, `Course`, `Classroom`,
+   `Enrollment` with `Student`/`Teacher` subClassOf a shared `Person` root,
+   attributes (email, gradeLevel enum, credits, roomNumber) and relations
+   (`teaches`, `takes`, `heldIn`). Zero validation errors.
+
+4. **`library`** — category `Domain`. Catalogue + loans: `LibraryItem`,
+   `Book`, `Magazine` (both subClassOf LibraryItem), `Author`, `Member`,
+   `Loan`. Attributes `isbn` (string, required), `publishedYear` (integer),
+   `dueDate` (date). Relations `writtenBy`, `borrows`, `lends`. Zero errors.
+
+Each template must build a **fresh** ontology each call (unique class/attribute/
+relation ids, no shared mutable state between calls) and validate with zero
+errors. Determinism is defined by the **`now` seed**: `build({ now })` with a
+fixed `now` reproduces byte-identical output (used to make assertions and
+screenshots reproducible), while distinct `now` seeds produce entirely
+non-overlapping ids. Two consecutive `build()` calls with the **same** `now`
+return the same ids; with different `now` values they never share an id. When
+`now` is omitted the build uses the real wall clock and is therefore unique per
+call. Tests must assert: registry order, find/unknown-throw, and for EVERY
+template — class count, key class/relation presence, zero validation errors,
+deterministic re-build with a fixed `now`, and that two builds with different
+`now` values never share ids.
+
+The University sample keeps `createSampleOntology()` unchanged (that is the
+"Load sample" action); templates are an additional surface surfaced by the New-
+ontology dialog.

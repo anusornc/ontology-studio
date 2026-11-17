@@ -107,9 +107,13 @@ the sidebar collapses to a toggle. Usable at 1440x900 (primary target) and
 - `state/store.ts` – `createOntologyStore(api, options?)` using
   `zustand/vanilla`; exposes state + actions. State: `summaries`, `ontology`,
   `selected`, `issues`, `sidebarTab`, `saveState`, `error`, `booting`. Actions:
-  `bootstrap`, `openOntology`, `createNewOntology`, `loadSample`, `mutate`,
-  `save`, `validate`, `removeOntology`, `select`, `setSidebarTab`. The App uses
-  a React context provider wrapping a store instance.
+  `bootstrap`, `openOntology`, `createNewOntology`, `createFromTemplate`,
+  `loadSample`, `mutate`, `save`, `validate`, `removeOntology`, `select`,
+  `setSidebarTab`. The App uses a React context provider wrapping a store instance.
+  `createFromTemplate(templateId)` mirrors `loadSample`: it calls `@onto/core`
+  `createOntologyFromTemplate`, creates the ontology via the API, saves the
+  template's document, then opens it. `templates` (the list from
+  `createOntologyTemplates()`) is exposed on the store for the dialogs.
 - `graph/toFlow.ts` – pure mapping `ontology -> {nodes, edges}` for React Flow
   (unit-testable without rendering).
 - Components: `TopBar`, `Sidebar`, `ClassTree`, `RelationsList`, `IssuesPanel`,
@@ -124,6 +128,16 @@ Top bar: `topbar`, `topbar-brand`, `ontology-select`, `btn-new-ontology`,
 Empty state / new dialog: `empty-state`, `new-ontology-dialog`,
 `input-ontology-name`, `btn-create-ontology`, `btn-load-sample`,
 `btn-cancel-new-ontology`.
+Template picker (inside the New dialog and the empty state): `template-grid`,
+`template-card-${templateId}`, `template-search`, `template-tab-templates`,
+`template-tab-blank`, `btn-use-template-${templateId}`.
+A "Templates" section shows one card per `@onto/core` template
+(`template-card-${id}` with the template `name` and `description` as visible
+text). Clicking `btn-use-template-${id}` creates an ontology FROM that template
+via the store's `createFromTemplate` action and opens it. A search box
+(`template-search`) filters cards by name/description/tags. The dialog defaults
+to the "Blank" tab (`template-tab-blank`) which keeps the existing name-input
+flow; switching to `template-tab-templates` swaps to the grid.
 Sidebar: `sidebar`, `sidebar-tab-classes`, `sidebar-tab-relations`,
 `sidebar-tab-issues`, `btn-add-class`, `class-search`, `class-tree`,
 `tree-node-${classId}`, `relation-item-${relationId}`, `issues-panel`,

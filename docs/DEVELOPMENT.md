@@ -197,7 +197,7 @@ may change during refactoring.
 | API app | `await buildApp({ repository })` plus `app.inject(...)` — no port, no network | Route behaviour, status codes, error envelope, headers |
 | API persistence | Construct the app with `JsonFileOntologyRepository` rooted at a temporary directory; rebuild the app to prove a restart | Atomic writes and restart survival |
 | Web API client | Mock global `fetch`; assert URL, method, headers and mapped `ApiError` | Protocol mapping |
-| Web store | `createOntologyStore(fakeApi, options?)`; fake timers for the autosave debounce; assert state transitions | `bootstrap`, create/open/sample, `mutate`, `save`, `validate`, selection, tabs |
+| Web store | `createOntologyStore(fakeApi, options?)`; fake timers for the autosave debounce; assert state transitions | `bootstrap`, create/open/sample, `createFromTemplate`, `mutate`, `save`, `validate`, selection, tabs |
 | Web graph mapping | Pure `toFlow(ontology, selected)` result; no rendering | Nodes, edges, positions, labels, selection flags |
 | Web components | Testing Library queries by the contract's `data-testid` attributes; React Flow is mocked in App-level tests | Empty state, sidebar, inspector, issues panel, export menu |
 | End-to-end | Real web app and real API through `playwright.config.ts`; `baseURL` 127.0.0.1:5173, data in `.e2e-data` | The full user journey |

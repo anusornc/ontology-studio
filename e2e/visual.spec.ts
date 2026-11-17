@@ -35,4 +35,21 @@ test.describe("Visual captures", () => {
     await page.waitForTimeout(300);
     await page.screenshot({ path: "docs/screenshots/validation.png", fullPage: true });
   });
+
+  test("captures the Pizza template studio and the template picker", async ({ page }) => {
+    await gotoApp(page);
+    await expect(page.getByTestId("empty-state")).toBeVisible();
+
+    // The template picker inside the empty state.
+    await expect(page.getByTestId("template-grid")).toBeVisible();
+    await page.screenshot({ path: "docs/screenshots/template-picker.png", fullPage: true });
+
+    // The Pizza template opened in the studio.
+    await page.getByTestId("btn-use-template-pizza").click();
+    await expect(page.getByTestId("canvas")).toBeVisible();
+    await expect(page.locator('[data-testid^="node-"]')).toHaveCount(7);
+    await waitForSaved(page);
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: "docs/screenshots/pizza-template.png", fullPage: true });
+  });
 });

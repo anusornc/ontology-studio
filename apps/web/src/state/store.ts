@@ -1,5 +1,10 @@
-import type { Ontology, OntologySummary, ValidationIssue } from "@onto/core";
-import { summarizeOntology } from "@onto/core";
+import type {
+  Ontology,
+  OntologySummary,
+  OntologyTemplate,
+  ValidationIssue
+} from "@onto/core";
+import { createOntologyTemplates, summarizeOntology } from "@onto/core";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { OntologyApi } from "../api/client";
 import type { SaveState, Selection, SidebarTab } from "./types";
@@ -19,6 +24,8 @@ export interface OntologyStoreState {
   error: string | null;
   /** Bumped after creating a class so the inspector can focus its label field. */
   classLabelFocusToken: number;
+  /** Ready-made starting ontologies offered by the template picker. */
+  templates: OntologyTemplate[];
 }
 
 export interface OntologyStoreActions {
@@ -27,6 +34,12 @@ export interface OntologyStoreActions {
   openOntology(id: string): Promise<void>;
   createNewOntology(name: string): Promise<boolean>;
   loadSample(): Promise<boolean>;
+  /**
+   * Build and open a brand-new ontology from a named template. Mirrors
+   * `loadSample`: creates the document in core, persists it via the API, then
+   * opens it. Returns false and records a store error on failure.
+   */
+  createFromTemplate(templateId: string): Promise<boolean>;
   /**
    * Apply a pure `@onto/core` mutation to the current document. The new
    * aggregate becomes the local source of truth immediately and schedules a
@@ -172,6 +185,7 @@ export function createOntologyStore(
       saveState: "idle",
       error: null,
       classLabelFocusToken: 0,
+      templates: createOntologyTemplates(),
 
       async bootstrap() {
         set({ booting: true, error: null });
@@ -246,6 +260,32 @@ export function createOntologyStore(
           return true;
         } catch (caught) {
           set({ error: `Could not load the sample ontology: ${errorMessage(caught)}` });
+          return false;
+        }
+      },
+
+      async createFromTemplate(templateId) {
+        await flushBeforeDocumentChange();
+        try {
+          const core = await import("@onto/core");
+          const template = core.createOntologyFromTemplate(templateId);
+          const created = await api.createOntology({
+            name: template.name,
+            description: template.description,
+            baseIri: template.baseIri,
+            version: template.version
+          });
+          const saved = await api.saveOntology({
+            ...template,
+            id: created.id,
+            createdAt: created.createdAt,
+            updatedAt: created.updatedAt
+          });
+          resetForDocument(saved);
+          upsertSummary(saved);
+          return true;
+        } catch (caught) {
+          set({ error: `Could not create from template: ${errorMessage(caught)}` });
           return false;
         }
       },

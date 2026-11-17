@@ -26,6 +26,10 @@ application.
 - **Validation.** Server-side validation returns a deterministic report of errors and
   warnings (17 issue codes covering naming, duplicates, inheritance and endpoint
   integrity). Issues are grouped in the sidebar and select the offending entity.
+- **Ready-made templates.** Start from a real ontology instead of a blank canvas:
+  pick from the **Pizza** (the classic Protégé tutorial model), **Supply chain**
+  (batch/location/party traceability), **Education** or **Library** templates in the
+  New-ontology dialog or the empty-state grid, then build on top and export.
 - **Export and import.** The API produces Turtle (`.ttl`), JSON-LD (`.jsonld`) and native
   JSON (`.json`) downloads; native JSON documents can also be imported through the API
   without overwriting existing ontologies (a colliding import receives a fresh id and an
@@ -47,6 +51,10 @@ inspector and status bar (layout per docs/UI-CONTRACT.md).
 
 ![Ontology Designer — the sample "University" ontology open in the studio](docs/screenshots/studio.png)
 
+![The Pizza template — the classic Protégé tutorial — loaded from the template picker](docs/screenshots/pizza-template.png)
+
+![Ready-made ontology templates in the empty-state picker](docs/screenshots/template-picker.png)
+
 ![Validation panel reporting issues in the sidebar](docs/screenshots/validation.png)
 
 ![Cold-start empty state](docs/screenshots/empty-state.png)
@@ -64,8 +72,9 @@ the other way round.
 ```
 
 - `@onto/core` owns the domain contract: factories, immutable mutations, queries and
-  layout, validation, native JSON parsing/serialization, Turtle and JSON-LD export, and
-  the sample ontology.
+  layout, validation, native JSON parsing/serialization, Turtle and JSON-LD export, the
+  sample ontology and a catalogue of ready-made templates (Pizza, supply chain,
+  education, library).
 - `@onto/server` exposes the REST API, validates documents with core, and persists one
   JSON file per ontology through a repository interface (JSON-file adapter at runtime,
   in-memory adapter in tests).
