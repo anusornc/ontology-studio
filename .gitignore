@@ -14,3 +14,4 @@ test-results/
 apps/server/.dev-data/
 apps/server/.e2e-smoke/
 apps/server/data/
+site/.vitepress/dist/

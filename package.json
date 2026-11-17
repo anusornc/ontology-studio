@@ -16,13 +16,17 @@
     "typecheck": "pnpm -r typecheck",
     "e2e": "playwright test",
     "e2e:install": "playwright install chromium",
-    "check": "pnpm typecheck && pnpm test"
+    "check": "pnpm typecheck && pnpm test",
+    "docs:dev": "vitepress dev site",
+    "docs:build": "vitepress build site",
+    "docs:preview": "vitepress preview site"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
     "@types/node": "24.10.1",
     "concurrently": "10.0.7",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitepress": "^1.6.4"
   },
   "engines": {
     "node": ">=22"
