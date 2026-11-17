@@ -12,3 +12,5 @@ test-results/
 
 # Local dev data
 apps/server/.dev-data/
+apps/server/.e2e-smoke/
+apps/server/data/
