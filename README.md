@@ -34,9 +34,10 @@ application.
   JSON (`.json`) downloads; native JSON documents can also be imported through the API
   without overwriting existing ontologies (a colliding import receives a fresh id and an
   `(imported)` name suffix).
-- **Persistence.** One JSON document per ontology, written atomically to a data
-  directory; ontologies are listed by most-recently-updated and survive page reloads
-  and server restarts.
+- **Persistence.** On-disk and pluggable: a **JSON file store** (default, one document
+  per ontology, atomic temp-file + rename) or an **embedded SQLite** backend
+  (`ONTO_DB_TYPE=sqlite`, Node's built-in `node:sqlite`, ACID, indexed by last-updated).
+  Ontologies survive page reloads and server restarts on either backend.
 - **Sample ontology.** A ready-to-explore "University" model with a small inheritance
   tree, mixed datatypes and relations, guaranteed to validate with zero errors.
 

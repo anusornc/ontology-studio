@@ -1,12 +1,13 @@
 /**
- * Production entrypoint: wire the JSON-file repository, build the Fastify app
+ * Production entrypoint: wire the persisted repository, build the Fastify app
  * and listen. All routing behavior lives in `app.ts`; this file only resolves
  * environment configuration and owns the process lifecycle.
  */
-import { isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 
 import { buildApp } from "./app.js";
-import { createJsonFileRepository } from "./repository.js";
+import { createRepositoryByType } from "./repository.js";
+import type { OntologyRepository } from "./repository.js";
 
 const DEFAULT_PORT = 5174;
 const DEFAULT_HOST = "127.0.0.1";
@@ -27,14 +28,19 @@ async function main(): Promise<void> {
   const port = readPort(process.env.PORT);
   const host = process.env.HOST?.trim() || DEFAULT_HOST;
   // Resolve relative paths against the process cwd so `@fastify/static` and the
-  // JSON repository receive absolute paths regardless of where the server runs.
+  // repository receive absolute paths regardless of where the server runs.
   const dataDir = resolve(process.env.ONTO_DATA_DIR?.trim() || DEFAULT_DATA_DIR);
   const webDistDirRaw = process.env.ONTO_WEB_DIST?.trim() || null;
   const webDistDir =
     webDistDirRaw === null ? null : isAbsolute(webDistDirRaw) ? webDistDirRaw : resolve(webDistDirRaw);
+  // Persistence backend: "sqlite" (embedded, on-disk) or "json" (per-file docs).
+  const dbType = process.env.ONTO_DB_TYPE?.trim().toLowerCase() || "json";
+
+  const repository: OntologyRepository & { close?: () => void } =
+    createRepositoryByType(dbType, dataDir);
 
   const app = await buildApp({
-    repository: createJsonFileRepository(dataDir),
+    repository,
     webDistDir
   });
 
@@ -47,6 +53,7 @@ async function main(): Promise<void> {
     console.log(`[onto-server] ${signal} received, shutting down.`);
     try {
       await app.close();
+      repository.close?.();
       process.exitCode = 0;
     } catch (error) {
       console.error("[onto-server] shutdown failed", error);
@@ -61,13 +68,14 @@ async function main(): Promise<void> {
     const address = await app.listen({ port, host });
     console.log(
       `[onto-server] Ontology API listening on ${address} ` +
-        `(data: ${join(dataDir, "ontologies")}` +
+        `(db: ${dbType}, data: ${dataDir}` +
         `${webDistDir === null ? "" : `, web: ${webDistDir}`})`
     );
   } catch (error) {
     console.error("[onto-server] failed to start", error);
-    process.exitCode = 1;
     await app.close().catch(() => undefined);
+    repository.close?.();
+    process.exitCode = 1;
   }
 }
 

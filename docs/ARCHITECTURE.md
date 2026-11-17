@@ -26,8 +26,11 @@ timestamps — are injectable or tolerated by tests.
 ## 1. System context and components
 
 The browser studio talks JSON over HTTP to the Fastify API. The API persists each
-ontology as a JSON file through a repository interface. Both applications import the
-shared domain core for the behaviour they must agree on.
+ontology through a repository interface that has two on-disk backends, chosen at
+startup by `ONTO_DB_TYPE`: a **JSON file store** (default, one document per
+ontology, atomic temp-file + rename) or an **embedded SQLite** database via Node's
+built-in `node:sqlite`. Both applications import the shared domain core for the
+behaviour they must agree on.
 
 ```mermaid
 flowchart LR
@@ -50,20 +53,24 @@ flowchart LR
         app["buildApp<br/>Fastify routes"]
         repo["OntologyRepository<br/>interface"]
         memory["InMemoryOntologyRepository<br/>tests"]
-        jsonfile["JsonFileOntologyRepository<br/>runtime"]
+        jsonfile["JsonFileOntologyRepository<br/>ONTO_DB_TYPE=json"]
+        sqlite["SqliteOntologyRepository<br/>ONTO_DB_TYPE=sqlite"]
         app --> repo
         repo -.-> memory
         repo -.-> jsonfile
+        repo -.-> sqlite
     end
 
     core["@onto/core<br/>pure domain: model, queries, layout, validation, serialization"]
     disk[("JSON files<br/>data/ontologies/{id}.json")]
+    sqldb[("ontologies.db<br/>SQLite, indexed updated_at")]
 
     client -->|"HTTP JSON under /api"| app
     store -->|"types, sample data and templates"| core
     toflow -->|"types"| core
     app -->|"create, parse, mutate, validate, export"| core
     jsonfile -->|"atomic write: temp file then rename"| disk
+    sqlite -->|"ACID, ONTO_DB_TYPE=sqlite"| sqldb
 ```
 
 - In development the web dev server proxies `/api` to `127.0.0.1:5174`, so the browser
@@ -72,7 +79,8 @@ flowchart LR
 - The API owns persistence. The web app never writes files and never assumes where data
   lives; it only sends complete ontology documents through the REST contract.
 - The repository is a seam as well as an abstraction: tests build the API with an
-  in-memory adapter, while `server.ts` wires the JSON-file adapter rooted at
+  in-memory adapter, while `server.ts` wires the on-disk backend chosen by
+  `ONTO_DB_TYPE` (`json` or `sqlite`) rooted at
   `ONTO_DATA_DIR`.
 - `@onto/core` appears on both sides because the contracts require both to agree on
   documents. The browser uses core types and helpers; the API uses core factories,

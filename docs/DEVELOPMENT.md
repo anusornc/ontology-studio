@@ -53,10 +53,15 @@ The API reads these at startup (see [API-CONTRACT.md](API-CONTRACT.md)):
 | --- | --- | --- |
 | `PORT` | `5174` | HTTP port the API listens on. |
 | `HOST` | `127.0.0.1` | Bind address. |
-| `ONTO_DATA_DIR` | `./data` | Directory for `<dataDir>/ontologies/<id>.json`. Resolved from the process working directory. |
+| `ONTO_DATA_DIR` | `./data` | Persistence directory. Resolved from the process working directory. |
+| `ONTO_DB_TYPE` | `json` | On-disk backend: `json` (per-file documents) or `sqlite` (embedded on-disk DB). |
 | `ONTO_WEB_DIST` | unset | When set and the directory exists, serve the built web app from it with SPA fallback. |
 
-`data/` and `.e2e-data/` are gitignored. Tests that exercise the JSON-file adapter use
+Run with the embedded SQLite backend: `ONTO_DB_TYPE=sqlite ONTO_DATA_DIR=./data pnpm dev:api`
+(the API writes a single `ontologies.db` file in the data directory). Stay with
+`json` (the default) for human-readable per-ontology files.
+
+`data/` and `.e2e-data/` are gitignored. Tests that exercise the on-disk adapters use
 their own temporary directory and never write into `data/`; the Playwright run uses
 `.e2e-data` through `playwright.config.ts`.
 

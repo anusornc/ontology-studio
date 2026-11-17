@@ -6,12 +6,16 @@ must be usable by the web client through the Vite dev proxy at `/api`.
 
 ## Data directory
 
-Persistence uses a JSON file store rooted at `ONTO_DATA_DIR` (default `./data`,
-resolved from the server process cwd). One file per ontology:
-`<dataDir>/ontologies/<id>.json`, written atomically (write temp file + rename).
-The repository is an interface with two adapters: `InMemoryOntologyRepository`
-(tests) and `JsonFileOntologyRepository` (runtime). Writes must survive a process
-restart.
+Persistence is pluggable behind the `OntologyRepository` seam and chosen at
+startup by `ONTO_DB_TYPE`: **`json`** (default, one JSON document per ontology in
+`<ONTO_DATA_DIR>/ontologies/<id>.json`, written atomically) or **`sqlite`**
+(embedded, on-disk, ACID — a single `<ONTO_DATA_DIR>/ontologies.db` file via
+Node's built-in `node:sqlite`, with an indexed `updated_at` for ordered listing
+and future queries). Both adapters re-decode every stored document through
+`parseOntology` from `@onto/core` on read, so a corrupt row/file surfaces as a
+`RepositoryError` instead of leaking an invalid `Ontology`. Choose the backend by
+setting `ONTO_DB_TYPE`; a process restart must observe all previously persisted
+documents for either backend.
 
 ## Environment
 
@@ -19,7 +23,8 @@ restart.
 | --- | --- | --- |
 | `PORT` | `5174` | HTTP port |
 | `HOST` | `127.0.0.1` | bind address |
-| `ONTO_DATA_DIR` | `./data` | persistence directory |
+| `ONTO_DATA_DIR` | `./data` | persistence directory (JSON files: `ontologies/`; SQLite: `ontologies.db`) |
+| `ONTO_DB_TYPE` | `json` | persistence backend: `json` (per-file documents) or `sqlite` (embedded on-disk DB) |
 | `ONTO_WEB_DIST` | unset | when set and the directory exists, serve the built web app as static files with SPA fallback |
 
 ## Error shape
